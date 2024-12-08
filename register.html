@@ -59,9 +59,13 @@
             <label for="floatingPassword">Password</label>
           </div>
 
-          <button class="btn btn-primary w-100 py-2" type="submit">
+          <div
+            class="btn btn-primary w-100 py-2"
+            type="submit"
+            onclick="onSubmit()"
+          >
             Register
-          </button>
+          </div>
         </form>
       </div>
     </div>
@@ -72,6 +76,38 @@
       integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
       crossorigin="anonymous"
     ></script>
-    <script></script>
+    <script>
+      function onSubmit() {
+        const username = document.getElementById("usernameInput").value;
+        const email = document.getElementById("emailInput").value;
+        const password = document.getElementById("passwordInput").value;
+        console.log(
+          `username ${username}, email ${email}, password ${password}`
+        );
+
+        fetch("https://api.kelasprogramming.com/register", {
+          method: "POST",
+          headers: {
+            "Content-type": "application/json",
+          },
+          body: JSON.stringify({
+            username: username,
+            email: email,
+            password: password,
+          }),
+        })
+          .then((res) => res.json())
+          .then((body) => {
+            debugger;
+            localStorage.setItem("todoJWTtoken", body.token);
+            localStorage.setItem("todoRefreshToken", body.refresh_token);
+            // redirect to index
+            window.location.href = "./sign-in.html";
+          })
+          .catch((err) => {
+            debugger;
+          });
+      }
+    </script>
   </body>
 </html>
