@@ -17,15 +17,12 @@
   </head>
   <body class="bg-secondary-subtle">
     <!-- navigation -->
+    <!-- - sekiranya user sudah login, paparkan button utk logout -->
+    <!-- - sekiranya user belum login, paparkan button utk login/register -->
+    <!-- - button logout akan padam token yang disimpan di dalam localstorage -->
     <div class="container-fluid bg-light py-2">
       <nav class="navbar bg-body-tertiary">
-        <div class="container">
-          <a class="navbar-brand" href="./index.html">Todo List</a>
-          <div class="d-flex">
-            <a class="navbar-brand" href="./sign-in.html">Login</a>
-            <a class="navbar-brand" href="./register.html">Register</a>
-          </div>
-        </div>
+        <div class="container" id="navbarContainer"></div>
       </nav>
     </div>
     <!-- content -->
@@ -73,6 +70,7 @@
             ></button>
           </div>
           <div class="modal-body">
+            <div id="currentTodo"></div>
             <div class="form-floating pb-2">
               <input
                 type="text"
@@ -82,7 +80,11 @@
               />
               <label for="todo">Edit Todo</label>
             </div>
-            <div class="btn btn-success">Mark as completed</div>
+            <!-- 3) Lengkapkan function utk update completion status
+            - samada menggunakan select dropdown atau bootstrap switches
+            - optional, cuba paparkan nilai asal todo item yang ingin di edit di dalam input  -->
+            <div id="completionStatus"></div>
+            <div class="form-check form-switch" id="switchStatus"></div>
           </div>
           <div class="modal-footer">
             <div
@@ -109,6 +111,26 @@
     ></script>
     <script>
       const JWTtoken = localStorage.getItem("todoJWTtoken");
+      const navbarContainer = document.getElementById("navbarContainer");
+      // navbarContainer.innerHTML = "";
+
+      function isLogin() {
+        if (!JWTtoken) {
+          window.location.href = "./sign-in.html";
+          console.log(!JWTtoken);
+        } else {
+          navbarContainer.innerHTML = `<a class="navbar-brand" href="./index.html">Todo List</a>
+          <div class="d-flex">
+            <a class="navbar-brand" href="./sign-in.html" onclick="logout()">Logout</a>
+          </div>`;
+          fetchAllTodos();
+        }
+      }
+
+      function logout() {
+        localStorage.setItem("todoJWTtoken", null);
+        localStorage.setItem("todoRefreshToken", null);
+      }
 
       function fetchAllTodos() {
         fetch("https://api.kelasprogramming.com/todo", {
@@ -137,14 +159,16 @@
                   <button class='btn btn-danger' onclick="onDelete(${
                     todo.id
                   })"><i class="bi bi-trash"></i></button>
-                </div>  
+                </div>
               </div>`
             );
             // render list of html elements kepada innerHTML dekat dalam #todoList
             document.getElementById("todoList").innerHTML = todoList.join("");
           })
           .catch((err) => {
-            debugger;
+            // debugger;
+            //redirect to sign-in
+            window.location.href = "./sign-in.html";
           });
       }
 
@@ -177,9 +201,43 @@
           });
       }
       let selectedTodo = "";
+      let todoStatus = 0;
       function selectTodo(todo) {
         console.log(todo);
+        todoStatus = todo.completed;
         selectedTodo = todo;
+        const switchStatus = document.getElementById("switchStatus");
+
+        switchStatus.innerHTML = `<input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="flexSwitchCheckDefault"
+              />
+              <label class="form-check-label" for="flexSwitchCheckDefault"
+                >Mark as completed</label
+              >`;
+
+        const flexSwitchCheckDefault = document.getElementById(
+          "flexSwitchCheckDefault"
+        );
+
+        document.getElementById(
+          "completionStatus"
+        ).innerHTML = `<b>Current Status:</b> ${
+          todoStatus == 1 ? "Completed" : "Not Completed"
+        }`;
+        document.getElementById(
+          "currentTodo"
+        ).innerHTML = `<b>Current Todo:</b> ${todo.details}`;
+
+        if (todoStatus == 1) {
+          flexSwitchCheckDefault.click();
+        }
+
+        flexSwitchCheckDefault.addEventListener("change", function () {
+          todoStatus = this.checked ? 1 : 0;
+        });
       }
 
       function onDelete(id) {
@@ -200,7 +258,10 @@
       }
 
       function onSaveChanges() {
-        const inputValue = document.getElementById("todoUpdate").value;
+        let inputValue = document.getElementById("todoUpdate").value;
+        if (inputValue == "") {
+          inputValue = selectedTodo.details;
+        }
         fetch(`https://api.kelasprogramming.com/todo/${selectedTodo.id}`, {
           method: "PUT",
           headers: {
@@ -209,11 +270,12 @@
           },
           body: JSON.stringify({
             details: inputValue,
-            completed: 1,
+            completed: todoStatus,
           }),
         })
           .then((response) => response.json())
           .then((body) => {
+            // debugger;
             fetchAllTodos();
             document.getElementById("todoUpdate").value = "";
             document.getElementById("closeModal").click();
@@ -223,7 +285,7 @@
           });
       }
 
-      fetchAllTodos();
+      isLogin();
     </script>
   </body>
 </html>
